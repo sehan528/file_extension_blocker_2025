@@ -1,0 +1,77 @@
+# 파일 확장자 차단 시스템 .gitignore
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 환경변수 파일
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 로그 파일
+logs/
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 임시 파일
+temp/
+tmp/
+.tmp/
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 테스트 커버리지
+coverage/
+.nyc_output
+
+# Firebase 설정 (민감정보)
+firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# AWS 설정
+aws-config.json
+
+# 업로드된 파일 (로컬 개발용)
+uploads/
+public/uploads/
+
+# 데이터베이스 백업
+*.sql.backup
+*.dump
+
+# PM2 설정
+ecosystem.config.js
+
+# SSL 인증서
+*.pem
+*.key
+*.crt
+
+# 커스텀
+/database/migrations/.gitkeep
+/tests/fixtures/.gitkeep
+/scripts/setupProjectStructure.js
