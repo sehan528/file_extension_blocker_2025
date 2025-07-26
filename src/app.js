@@ -1,5 +1,11 @@
 const express = require('express');
+const helmetConfig = require('./config/helmet');
+const corsConfig = require('./config/cors');
+
 const app = express();
+
+app.use(helmetConfig);
+app.use(corsConfig);
 
 app.use(express.json());
 
