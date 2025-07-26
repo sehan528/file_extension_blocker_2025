@@ -3,6 +3,7 @@ const router = express.Router();
 
 // API 라우트 모듈들
 const policyRoutes = require('./policy.route');
+const uploadRoutes = require('./upload.route');
 
 // Health Check (API 전용)
 router.get('/health', (req, res) => {
@@ -14,6 +15,7 @@ router.get('/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         endpoints: {
             policy: '/api/policy',
+            upload: '/api/upload',
             health: '/api/health'
         }
     });
@@ -21,6 +23,9 @@ router.get('/health', (req, res) => {
 
 // 정책 관리 API
 router.use('/policy', policyRoutes);
+
+// 파일 업로드 API (새로 추가)
+router.use('/upload', uploadRoutes);
 
 // TODO: 추가 API 라우트들
 // router.use('/upload', uploadRoutes);

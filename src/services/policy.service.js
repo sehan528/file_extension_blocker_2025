@@ -6,19 +6,24 @@ class PolicyService {
         return userId === 'demo1' ? 1 : userId === 'demo2' ? 2 : 1;
     }
 
-    // 사용자 정책 조회
+    // 사용자 정책 조회 (메서드명 수정!)
     async getUserPolicies(userId) {
         const customerId = this.getUserId(userId);
 
         try {
+            console.log('🔍 정책 조회 시작:', { userId, customerId });
+
+            // 올바른 메서드명 사용!
             const [fixedExtensions, customExtensions] = await Promise.all([
-                policyRepository.getFixedExtensionPolicies(customerId),
+                policyRepository.getFixedExtensionPolicies(customerId), // 올바른 메서드명
                 policyRepository.getCustomExtensionPolicies(customerId)
             ]);
 
             console.log('✅ DB 조회 성공:', {
                 fixedCount: fixedExtensions.length,
-                customCount: customExtensions.length
+                customCount: customExtensions.length,
+                fixedData: fixedExtensions,
+                customData: customExtensions
             });
 
             return {
@@ -33,6 +38,7 @@ class PolicyService {
             };
 
         } catch (error) {
+            console.error('❌ DB 정책 조회 실패:', error);
             console.warn('⚠️ DB 연결 실패, 샘플 데이터 반환:', error.message);
 
             // DB 연결 실패 시 샘플 데이터 반환

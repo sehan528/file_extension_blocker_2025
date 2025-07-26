@@ -1,7 +1,6 @@
 const policyService = require('../services/policy.service');
 
 class PolicyController {
-    // 정책 조회
     async getPolicies(req, res) {
         try {
             const { userId } = req.params;
@@ -24,11 +23,13 @@ class PolicyController {
         }
     }
 
-    // 고정 확장자 토글
+    // 고정 확장자 토글 - 기존 코드 유지 (Service와 호환됨)
     async updateFixedExtension(req, res) {
         try {
             const { userId } = req.params;
             const { extension, isBlocked } = req.body;
+
+            console.log('🔄 고정 확장자 업데이트:', { userId, extension, isBlocked });
 
             // 입력 검증
             const validation = policyService.validateFixedExtensionInput(extension, isBlocked);
@@ -51,16 +52,18 @@ class PolicyController {
             console.error('❌ 고정 확장자 업데이트 오류:', error);
             res.status(500).json({
                 success: false,
-                error: '확장자 정책을 업데이트하는 중 오류가 발생했습니다.'
+                error: error.message || '확장자 정책을 업데이트하는 중 오류가 발생했습니다.'
             });
         }
     }
 
-    // 커스텀 확장자 추가
+    // 커스텀 확장자 추가 - 기존 코드 유지 (Service와 호환됨)
     async addCustomExtension(req, res) {
         try {
             const { userId } = req.params;
             const { extension } = req.body;
+
+            console.log('➕ 커스텀 확장자 추가:', { userId, extension });
 
             // 입력 검증
             const validation = await policyService.validateCustomExtensionInput(userId, extension);
@@ -88,10 +91,12 @@ class PolicyController {
         }
     }
 
-    // 커스텀 확장자 삭제
+    // 커스텀 확장자 삭제 - 기존 코드 유지 (Service와 호환됨)
     async deleteCustomExtension(req, res) {
         try {
             const { userId, extension } = req.params;
+
+            console.log('🗑️ 커스텀 확장자 삭제:', { userId, extension });
 
             const result = await policyService.deleteCustomExtension(userId, extension);
 
@@ -117,10 +122,12 @@ class PolicyController {
         }
     }
 
-    // 차단된 확장자 목록 조회
+    // 차단된 확장자 목록 조회 - 기존 코드 유지 (Service와 호환됨)
     async getBlockedExtensions(req, res) {
         try {
             const { userId } = req.params;
+
+            console.log('🚫 차단 확장자 조회:', userId);
 
             const blockedExtensions = await policyService.getBlockedExtensions(userId);
 
