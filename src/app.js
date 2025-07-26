@@ -1,14 +1,18 @@
 const express = require('express');
 const helmetConfig = require('./config/helmet');
 const corsConfig = require('./config/cors');
+const setupMiddlewares = require('./config/middlewares');
 
 const app = express();
 
+// 보안 설정
 app.use(helmetConfig);
 app.use(corsConfig);
 
-app.use(express.json());
+// 기본 미들웨어
+setupMiddlewares(app);
 
+// 라우트
 app.get('/', (req, res) => {
     res.send('express');
 });
