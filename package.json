@@ -4,7 +4,15 @@
   "description": "파일 확장자 차단 시스템",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+
+    "db:start": "docker-compose up -d postgres",
+    "db:stop": "docker-compose down",
+    "db:reset": "docker-compose down -v && docker-compose up -d postgres",
+    "db:logs": "docker-compose logs postgres",
+
+    "test": "jest"
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",

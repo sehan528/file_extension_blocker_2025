@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: file-extension-blocker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: file_security_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      # 데이터 영속성
+      - postgres_data:/var/lib/postgresql/data
+      # 초기화 스크립트 (스키마 자동 실행)
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # 초기 데이터
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - file-security-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d file_security_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin (선택적 - DB 관리 도구)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: file-extension-blocker-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - file-security-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# 네트워크 설정
+networks:
+  file-security-network:
+    driver: bridge
+
+# 볼륨 설정 (데이터 영속성)
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
