@@ -1,21 +1,34 @@
 const policyRepository = require('../repositories/policy.repository');
+const customerRepository = require('../repositories/customer.repository');
 
 class PolicyService {
     // 사용자 ID를 고객 ID로 매핑 (임시)
-    getUserId(userId) {
-        return userId === 'demo1' ? 1 : userId === 'demo2' ? 2 : 1;
+    async getUserId(userId) {
+        try {
+            // 실제 DB 에서 고객 정보 조회
+            const customer = await customerRepository.findByUserId(userId);
+
+            if (!customer) {
+                throw new Error(`사용자를 찾을 수 없습니다: ${userId}`);
+            }
+
+            console.log('🔍 사용자 매핑:', { userId, customerId: customer.id });
+            return customer.id;
+
+        } catch (error) {
+            console.error('❌ 사용자 ID 매핑 실패:', error);
+            throw error;
+        }
     }
 
-    // 사용자 정책 조회 (메서드명 수정!)
+    // 사용자 정책 조회 (async/await 추가)
     async getUserPolicies(userId) {
-        const customerId = this.getUserId(userId);
-
         try {
+            const customerId = await this.getUserId(userId); // await 추가!
             console.log('🔍 정책 조회 시작:', { userId, customerId });
 
-            // 올바른 메서드명 사용!
             const [fixedExtensions, customExtensions] = await Promise.all([
-                policyRepository.getFixedExtensionPolicies(customerId), // 올바른 메서드명
+                policyRepository.getFixedExtensionPolicies(customerId),
                 policyRepository.getCustomExtensionPolicies(customerId)
             ]);
 
@@ -38,26 +51,8 @@ class PolicyService {
             };
 
         } catch (error) {
-            console.error('❌ DB 정책 조회 실패:', error);
-            console.warn('⚠️ DB 연결 실패, 샘플 데이터 반환:', error.message);
-
-            // DB 연결 실패 시 샘플 데이터 반환
-            return {
-                userId: userId,
-                customerId: customerId,
-                fixedExtensions: {
-                    'bat': false,
-                    'cmd': false,
-                    'com': false,
-                    'cpl': false,
-                    'exe': true,  // 샘플로 exe만 체크된 상태
-                    'scr': false,
-                    'js': false
-                },
-                customExtensions: ['sh', 'ju', 'ch'], // 샘플 커스텀 확장자
-                customExtensionCount: 3,
-                note: 'DB 연결 실패로 샘플 데이터를 반환합니다.'
-            };
+            console.error('❌ 정책 조회 실패:', error);
+            throw error;
         }
     }
 
@@ -83,7 +78,7 @@ class PolicyService {
 
     // 고정 확장자 업데이트
     async updateFixedExtension(userId, extension, isBlocked) {
-        const customerId = this.getUserId(userId);
+        const customerId = await this.getUserId(userId); // await 추가!
 
         const result = await policyRepository.updateFixedExtension(customerId, extension, isBlocked);
 
@@ -139,7 +134,7 @@ class PolicyService {
             };
         }
 
-        const customerId = this.getUserId(userId);
+        const customerId = await this.getUserId(userId); // await 추가!
 
         // 기존 확장자 중복 체크
         const exists = await policyRepository.checkExtensionExists(customerId, cleanExtension);
@@ -168,7 +163,7 @@ class PolicyService {
 
     // 커스텀 확장자 추가
     async addCustomExtension(userId, cleanExtension) {
-        const customerId = this.getUserId(userId);
+        const customerId = await this.getUserId(userId); // await 추가!
         const currentCount = await policyRepository.getCustomExtensionCount(customerId);
 
         const result = await policyRepository.addCustomExtension(customerId, cleanExtension);
@@ -182,7 +177,7 @@ class PolicyService {
 
     // 커스텀 확장자 삭제
     async deleteCustomExtension(userId, extension) {
-        const customerId = this.getUserId(userId);
+        const customerId = await this.getUserId(userId); // await 추가!
 
         const result = await policyRepository.deleteCustomExtension(customerId, extension);
 
@@ -203,7 +198,7 @@ class PolicyService {
 
     // 차단된 확장자 목록 조회
     async getBlockedExtensions(userId) {
-        const customerId = this.getUserId(userId);
+        const customerId = await this.getUserId(userId); // await 추가!
         return await policyRepository.getBlockedExtensions(customerId);
     }
 }

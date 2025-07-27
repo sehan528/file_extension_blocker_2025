@@ -177,6 +177,104 @@ class PolicyRepository {
         const result = await query(sql, [customerId]);
         return result.rows.map(row => row.extension_name);
     }
+
+    // 신규 고객 (회원가입 완료) 고정 확장자 정책 초기화
+    async initializeFixedExtensionPolicy(customerId, extensionName) {
+        return await transaction(async (client) => {
+            // 1. extension 테이블에서 ID 조회
+            const extensionResult = await client.query(
+                'SELECT id FROM extension WHERE extension_name = $1',
+                [extensionName]
+            );
+
+            if (extensionResult.rows.length === 0) {
+                throw new Error(`확장자 '${extensionName}'를 찾을 수 없습니다.`);
+            }
+
+            const extensionId = extensionResult.rows[0].id;
+
+            // 2. fixed_extension_policy에 추가 (고정 확장자 범위 설정)
+            await client.query(`
+                INSERT INTO fixed_extension_policy (customer_id, extension_id)
+                VALUES ($1, $2)
+                ON CONFLICT (customer_id, extension_id) DO NOTHING
+            `, [customerId, extensionId]);
+
+            // 3. fixed_extension_status에 기본 상태 추가 (unCheck 상태)
+            await client.query(`
+                INSERT INTO fixed_extension_status (customer_id, extension_id, is_blocked)
+                VALUES ($1, $2, false)
+                ON CONFLICT (customer_id, extension_id) DO NOTHING
+            `, [customerId, extensionId]);
+
+            return { customerId, extensionName, initialized: true };
+        });
+    }
+
+    // 고객의 고정 확장자 정책 범위 설정
+    async setFixedExtensionRange(customerId, extensionNames) {
+        return await transaction(async (client) => {
+            // 기존 고정 확장자 정책 삭제
+            await client.query(
+                'DELETE FROM fixed_extension_policy WHERE customer_id = $1',
+                [customerId]
+            );
+
+            // 새로운 고정 확장자 정책 추가
+            for (const extensionName of extensionNames) {
+                const extensionResult = await client.query(
+                    'SELECT id FROM extension WHERE extension_name = $1',
+                    [extensionName]
+                );
+
+                if (extensionResult.rows.length > 0) {
+                    const extensionId = extensionResult.rows[0].id;
+
+                    // fixed_extension_policy에 추가
+                    await client.query(`
+                        INSERT INTO fixed_extension_policy (customer_id, extension_id)
+                        VALUES ($1, $2)
+                    `, [customerId, extensionId]);
+
+                    // fixed_extension_status에 기본 상태 추가
+                    await client.query(`
+                        INSERT INTO fixed_extension_status (customer_id, extension_id, is_blocked)
+                        VALUES ($1, $2, false)
+                        ON CONFLICT (customer_id, extension_id) DO NOTHING
+                    `, [customerId, extensionId]);
+                }
+            }
+
+            return { customerId, extensionCount: extensionNames.length };
+        });
+    }
+
+    // 고객별 정책 완전 삭제 (회원 탈퇴 시)
+    async deleteAllCustomerPolicies(customerId) {
+        return await transaction(async (client) => {
+            // fixed_extension_status 삭제
+            await client.query(
+                'DELETE FROM fixed_extension_status WHERE customer_id = $1',
+                [customerId]
+            );
+
+            // fixed_extension_policy 삭제
+            await client.query(
+                'DELETE FROM fixed_extension_policy WHERE customer_id = $1',
+                [customerId]
+            );
+
+            // custom_extension 삭제
+            await client.query(
+                'DELETE FROM custom_extension WHERE customer_id = $1',
+                [customerId]
+            );
+
+            console.log('✅ 고객 정책 완전 삭제 완료:', customerId);
+            return { customerId, deleted: true };
+        });
+    }
+
 }
 
 module.exports = new PolicyRepository();
