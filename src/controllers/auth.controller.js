@@ -19,12 +19,13 @@ class AuthController {
             const result = await authService.login(userid, password, req);
 
             if (result.success) {
-                // 쿠키에 세션 ID 설정 (HttpOnly, Secure)
+                // 쿠키에 세션 ID 설정 (HttpOnly, Secure) - EC2 HTTP 환경에 맞게 수정
                 res.cookie('session_id', result.data.sessionId, {
                     httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'strict',
-                    maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000 // 24시간
+                    secure: false,  // HTTP에서도 동작하도록 변경
+                    sameSite: 'lax', // 'strict'에서 'lax'로 변경
+                    maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000, // 24시간
+                    path: '/' // 명시적 경로 설정
                 });
 
                 res.json({
@@ -104,8 +105,13 @@ class AuthController {
                 await authService.logout(sessionId);
             }
 
-            // 쿠키 삭제
-            res.clearCookie('session_id');
+            // 쿠키 삭제 - 설정 옵션과 일치하도록 수정
+            res.clearCookie('session_id', {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax',
+                path: '/'
+            });
 
             res.json({
                 success: true,
@@ -237,8 +243,13 @@ class AuthController {
             const customerRepository = require('../repositories/customer.repository');
             await customerRepository.delete(customerId);
 
-            // 쿠키 삭제
-            res.clearCookie('session_id');
+            // 쿠키 삭제 - 설정 옵션과 일치하도록 수정
+            res.clearCookie('session_id', {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax',
+                path: '/'
+            });
 
             res.json({
                 success: true,
