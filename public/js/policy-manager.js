@@ -5,13 +5,26 @@ const PolicyManager = {
         this.loadPoliciesFromAPI();
     },
 
-    // 정책 데이터를 API에서 로드
+    // 정책 데이터를 API 에서 로드 (인증 체크 추가)
     async loadPoliciesFromAPI() {
-        console.log('🔍 정책 로드 시작:', Utils.state.currentUser);
+        // 인증 상태 확인
+        if (!Utils.requireAuth()) {
+            console.log('🔒 인증되지 않은 상태 - 확장자 불러오기 중단');
+            return;
+        }
+
+        const currentUser = Utils.getCurrentUser();
+        console.log('🔍 확장자 불러오기 시작:', currentUser);
+
+        if (!currentUser) {
+            console.error('❌ 현재 사용자 정보를 찾을 수 없습니다');
+            Utils.showAlert('사용자 정보를 확인할 수 없습니다.', 'error');
+            return;
+        }
 
         try {
             Utils.setLoadingState(true);
-            const response = await window.apiClient.getPolicies(Utils.state.currentUser);
+            const response = await window.apiClient.getPolicies(currentUser);
             console.log('📡 API 응답:', response);
 
             if (response.success) {
@@ -30,15 +43,22 @@ const PolicyManager = {
                     window.CustomExtensionManager.updateDisplay(Utils.state.customExtensions);
                 }
 
-                console.log('✅ 정책 로드 완료');
-                Utils.showAlert('정책을 성공적으로 불러왔습니다.', 'success');
+                console.log('✅ 확장자 불러오기 완료');
+                Utils.showAlert('확장자 불러오기를 성공적으로 불러왔습니다.', 'success');
             } else {
-                throw new Error(response.error || '정책을 불러오는데 실패했습니다.');
+                throw new Error(response.error || '확장자 목록을 불러오는데 실패했습니다.');
             }
 
         } catch (error) {
-            console.error('❌ 정책 로드 실패:', error);
-            Utils.showAlert('정책을 불러오는데 실패했습니다.', 'error');
+            console.error('❌ 확장자 불러오기 실패:', error);
+
+            // 인증 관련 에러인지 확인
+            if (error.message && error.message.includes('인증이 필요합니다')) {
+                Utils.handleApiError(error, '');
+                return;
+            }
+
+            Utils.showAlert('확장자 목록을 불러오는데 실패했습니다.', 'error');
 
             // 실패 시 샘플 데이터 로드
             Utils.loadSampleData();
@@ -56,7 +76,7 @@ const PolicyManager = {
     // 현재 정책 상태 가져오기
     getCurrentPolicyState() {
         return {
-            currentUser: Utils.state.currentUser,
+            currentUser: Utils.getCurrentUser(),
             fixedExtensions: { ...Utils.state.fixedExtensions },
             customExtensions: [...Utils.state.customExtensions],
             totalCustomCount: Utils.state.customExtensions.length
@@ -117,11 +137,14 @@ const PolicyManager = {
         };
     },
 
-    // 정책 내보내기 (JSON)
+    // 정책 내보내기 (JSON) - 인증 체크 추가
     exportPolicy() {
+        if (!Utils.requireAuth()) return;
+
+        const currentUser = Utils.getCurrentUser();
         const policyData = {
             exportDate: new Date().toISOString(),
-            customer: Utils.state.currentUser,
+            customer: currentUser,
             fixedExtensions: Utils.state.fixedExtensions,
             customExtensions: Utils.state.customExtensions,
             statistics: this.getPolicyStatistics()
@@ -132,20 +155,65 @@ const PolicyManager = {
 
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
-        link.download = `file-extension-policy-${Utils.state.currentUser}-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `file-extension-policy-${currentUser}-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
 
         Utils.showAlert('정책 데이터를 내보냈습니다.', 'success');
     },
 
+    // 정책 초기화 (신규 사용자용)
+    async initializePolicyForNewUser() {
+        const currentUser = Utils.getCurrentUser();
+        if (!currentUser) {
+            console.error('❌ 신규 사용자 확장자 초기화 실패: 사용자 정보 없음');
+            return;
+        }
+
+        console.log('🆕 신규 사용자 확장자 초기화:', currentUser);
+
+        // 기본 고정 확장자 7개 (모두 unCheck 상태)
+        const defaultFixedExtensions = {
+            'bat': false,
+            'cmd': false,
+            'com': false,
+            'cpl': false,
+            'exe': false,
+            'scr': false,
+            'js': false
+        };
+
+        // 로컬 상태 설정
+        Utils.state.fixedExtensions = defaultFixedExtensions;
+        Utils.state.customExtensions = [];
+
+        // UI 업데이트
+        if (window.FixedExtensionManager) {
+            window.FixedExtensionManager.updateDisplay(defaultFixedExtensions);
+        }
+
+        if (window.CustomExtensionManager) {
+            window.CustomExtensionManager.updateDisplay([]);
+        }
+
+        console.log('✅ 신규 사용자 정책 초기화 완료');
+    },
+
     // 디버그 정보 출력
     printDebugInfo() {
-        console.group('🔍 정책 관리자 디버그 정보');
-        console.log('현재 사용자:', Utils.state.currentUser);
+        if (!Utils.requireAuth()) return;
+
+        console.group('🔍 확장자 관리자 디버그 정보');
+        console.log('현재 사용자:', Utils.getCurrentUser());
+        console.log('인증 상태:', Utils.isAuthenticated());
         console.log('고정 확장자:', Utils.state.fixedExtensions);
         console.log('커스텀 확장자:', Utils.state.customExtensions);
-        console.log('정책 통계:', this.getPolicyStatistics());
-        console.log('정책 유효성:', this.validatePolicyState());
+        console.log('확장자 통계:', this.getPolicyStatistics());
+        console.log('확장자 유효성:', this.validatePolicyState());
+
+        if (window.AuthManager) {
+            console.log('인증 관리자 상태:', window.AuthManager.getDebugInfo());
+        }
+
         console.groupEnd();
     }
 };
