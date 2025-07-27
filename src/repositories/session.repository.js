@@ -24,7 +24,7 @@ class SessionRepository {
     // 세션 조회
     async findSession(sessionId) {
         const sql = `
-            SELECT 
+            SELECT
                 us.session_id,
                 us.customer_id,
                 us.session_data,
@@ -57,8 +57,8 @@ class SessionRepository {
     // 세션 업데이트
     async updateSession(sessionId, sessionData, newExpiresAt) {
         const sql = `
-            UPDATE user_sessions 
-            SET 
+            UPDATE user_sessions
+            SET
                 session_data = $2,
                 expires_at = $3,
                 updated_at = CURRENT_TIMESTAMP
@@ -78,7 +78,7 @@ class SessionRepository {
     // 세션 삭제 (로그아웃)
     async deleteSession(sessionId) {
         const sql = `
-            DELETE FROM user_sessions 
+            DELETE FROM user_sessions
             WHERE session_id = $1
             RETURNING session_id, customer_id
         `;
@@ -90,39 +90,37 @@ class SessionRepository {
     // 사용자의 모든 세션 삭제
     async deleteAllUserSessions(customerId) {
         const sql = `
-            DELETE FROM user_sessions 
+            DELETE FROM user_sessions
             WHERE customer_id = $1
-            RETURNING COUNT(*) as deleted_count
         `;
 
         const result = await query(sql, [customerId]);
-        return result.rows[0];
+        return { deleted_count: result.rowCount };
     }
 
     // 만료된 세션 정리
     async cleanupExpiredSessions() {
         const sql = `
-            DELETE FROM user_sessions 
+            DELETE FROM user_sessions
             WHERE expires_at < CURRENT_TIMESTAMP
-            RETURNING COUNT(*) as deleted_count
         `;
 
         const result = await query(sql);
-        return parseInt(result.rows[0].deleted_count);
+        return result.rowCount; // rowCount 직접 반환
     }
 
     // 사용자별 활성 세션 목록
     async getUserActiveSessions(customerId) {
         const sql = `
-            SELECT 
+            SELECT
                 session_id,
                 ip_address,
                 user_agent,
                 created_at,
                 expires_at
-            FROM user_sessions 
-            WHERE customer_id = $1 
-                AND expires_at > CURRENT_TIMESTAMP
+            FROM user_sessions
+            WHERE customer_id = $1
+              AND expires_at > CURRENT_TIMESTAMP
             ORDER BY created_at DESC
         `;
 
@@ -133,7 +131,7 @@ class SessionRepository {
     // 세션 통계
     async getSessionStatistics() {
         const sql = `
-            SELECT 
+            SELECT
                 COUNT(*) as total_sessions,
                 COUNT(CASE WHEN expires_at > CURRENT_TIMESTAMP THEN 1 END) as active_sessions,
                 COUNT(CASE WHEN expires_at <= CURRENT_TIMESTAMP THEN 1 END) as expired_sessions,
@@ -148,12 +146,12 @@ class SessionRepository {
     // 세션 연장
     async extendSession(sessionId, newExpiresAt) {
         const sql = `
-            UPDATE user_sessions 
-            SET 
+            UPDATE user_sessions
+            SET
                 expires_at = $2,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE session_id = $1 
-                AND expires_at > CURRENT_TIMESTAMP
+            WHERE session_id = $1
+              AND expires_at > CURRENT_TIMESTAMP
             RETURNING session_id, expires_at
         `;
 
