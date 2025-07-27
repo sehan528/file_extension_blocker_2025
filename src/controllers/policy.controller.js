@@ -65,9 +65,22 @@ class PolicyController {
 
             console.log('➕ 커스텀 확장자 추가:', { userId, extension });
 
-            // 입력 검증
+            // 입력 검증 (충돌 검사 포함)
             const validation = await policyService.validateCustomExtensionInput(userId, extension);
             if (!validation.isValid) {
+                // 충돌 정보가 있는 경우 상세 응답
+                if (validation.conflictInfo) {
+                    return res.status(409).json({ // 409 Conflict
+                        success: false,
+                        error: validation.error,
+                        detail: validation.detail,
+                        suggestion: validation.suggestion,
+                        conflictInfo: validation.conflictInfo,
+                        errorType: 'UPLOAD_CONFLICT'
+                    });
+                }
+
+                // 일반적인 검증 실패
                 return res.status(400).json({
                     success: false,
                     error: validation.error
