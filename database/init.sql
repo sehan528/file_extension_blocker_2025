@@ -56,6 +56,18 @@ CREATE TABLE uploaded_file (
                                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 세션 저장 테이블 추가
+CREATE TABLE user_sessions (
+                               session_id VARCHAR(255) PRIMARY KEY,
+                               customer_id INTEGER NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
+                               session_data TEXT NOT NULL,
+                               expires_at TIMESTAMP NOT NULL,
+                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                               ip_address INET,
+                               user_agent TEXT
+);
+
 -- 인덱스 생성
 CREATE UNIQUE INDEX idx_customer_userid ON customer(userid);
 CREATE UNIQUE INDEX idx_extension_name ON extension(extension_name);
@@ -68,3 +80,10 @@ CREATE INDEX idx_custom_extension_customer ON custom_extension(customer_id);
 CREATE INDEX idx_uploaded_file_customer ON uploaded_file(customer_id);
 CREATE INDEX idx_uploaded_file_extension ON uploaded_file(extension_id);
 CREATE INDEX idx_uploaded_file_date ON uploaded_file(uploaded_at DESC);
+
+CREATE INDEX idx_sessions_customer_id ON user_sessions(customer_id);
+CREATE INDEX idx_sessions_expires_at ON user_sessions(expires_at);
+CREATE INDEX idx_sessions_created_at ON user_sessions(created_at DESC);
+
+-- 만료된 세션 자동 정리를 위한 인덱스
+-- CREATE INDEX idx_sessions_cleanup ON user_sessions(expires_at) WHERE expires_at < CURRENT_TIMESTAMP;
