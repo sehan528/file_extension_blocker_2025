@@ -73,12 +73,28 @@ class ApiClient {
     }
 
     async addCustomExtension(userId, extension) {
-        return await this.request(`${this.baseUrl}/policy/custom/${userId}`, {
-            method: 'POST',
-            body: JSON.stringify({
-                extension: extension
-            })
-        });
+        try {
+            return await this.request(`${this.baseUrl}/policy/custom/${userId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    extension: extension
+                })
+            });
+        } catch (error) {
+            // 409 Conflict 에러의 경우 상세 정보 포함
+            if (error.message.includes('409')) {
+                const response = await fetch(`${this.baseUrl}/policy/custom/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ extension: extension })
+                });
+
+                const errorData = await response.json();
+                throw new Error(JSON.stringify(errorData));
+            }
+
+            throw error;
+        }
     }
 
     async deleteCustomExtension(userId, extension) {
