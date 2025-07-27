@@ -4,20 +4,19 @@ class UploadController {
     // 단일 파일 업로드
     async uploadSingleFile(req, res) {
         try {
-            const userId = req.params.userId || req.body.userId;
+            const { userId } = req.params;
             const file = req.file;
+
+            console.log('📁 파일 수신:', {
+                originalname: file?.originalname,
+                mimetype: file?.mimetype,
+                size: file?.size
+            });
 
             if (!file) {
                 return res.status(400).json({
                     success: false,
-                    error: '업로드할 파일이 없습니다.'
-                });
-            }
-
-            if (!userId) {
-                return res.status(400).json({
-                    success: false,
-                    error: '사용자 ID가 필요합니다.'
+                    error: '파일이 업로드되지 않았습니다.'
                 });
             }
 
@@ -31,38 +30,40 @@ class UploadController {
             const result = await uploadService.processFileUpload(userId, file);
 
             if (result.success) {
-                res.status(200).json(result);
+                res.json({
+                    success: true,
+                    message: result.message,
+                    data: result.data
+                });
             } else {
-                res.status(400).json(result);
+                res.status(400).json({
+                    success: false,
+                    error: result.error,
+                    reason: result.reason,
+                    layer: result.layer
+                });
             }
 
         } catch (error) {
-            console.error('❌ 파일 업로드 Controller 오류:', error);
+            console.error('❌ 파일 업로드 컨트롤러 오류:', error);
             res.status(500).json({
                 success: false,
-                error: '파일 업로드 중 서버 오류가 발생했습니다.',
+                error: '파일 업로드 처리 중 서버 오류가 발생했습니다.',
                 details: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }
 
-    // 다중 파일 업로드
+    // 여러 파일 업로드
     async uploadMultipleFiles(req, res) {
         try {
-            const userId = req.params.userId || req.body.userId;
+            const { userId } = req.params;
             const files = req.files;
 
             if (!files || files.length === 0) {
                 return res.status(400).json({
                     success: false,
-                    error: '업로드할 파일이 없습니다.'
-                });
-            }
-
-            if (!userId) {
-                return res.status(400).json({
-                    success: false,
-                    error: '사용자 ID가 필요합니다.'
+                    error: '파일이 업로드되지 않았습니다.'
                 });
             }
 
@@ -74,18 +75,20 @@ class UploadController {
 
             const result = await uploadService.processMultipleFiles(userId, files);
 
-            res.status(200).json({
+            res.json({
                 success: true,
-                message: `${result.summary.total}개 파일 처리 완료 (성공: ${result.summary.success}, 실패: ${result.summary.failed})`,
-                data: result
+                message: `${result.summary.total}개 파일 중 ${result.summary.success}개 성공, ${result.summary.failed}개 실패`,
+                data: {
+                    summary: result.summary,
+                    results: result.results
+                }
             });
 
         } catch (error) {
-            console.error('❌ 다중 파일 업로드 Controller 오류:', error);
+            console.error('❌ 다중 파일 업로드 컨트롤러 오류:', error);
             res.status(500).json({
                 success: false,
-                error: '파일 업로드 중 서버 오류가 발생했습니다.',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                error: '파일 업로드 처리 중 서버 오류가 발생했습니다.'
             });
         }
     }
@@ -94,33 +97,17 @@ class UploadController {
     async getAllowedFileTypes(req, res) {
         try {
             const result = await uploadService.getAllowedFileTypes();
-
             res.json({
                 success: true,
                 data: result
             });
-
         } catch (error) {
             console.error('❌ 허용 파일 타입 조회 오류:', error);
             res.status(500).json({
                 success: false,
-                error: '파일 타입 조회 중 오류가 발생했습니다.'
+                error: '허용 파일 타입을 조회하는 중 오류가 발생했습니다.'
             });
         }
-    }
-
-    // 업로드 테스트 (개발용)
-    async testUpload(req, res) {
-        res.json({
-            success: true,
-            message: '파일 업로드 API가 정상 작동합니다.',
-            timestamp: new Date().toISOString(),
-            endpoints: {
-                single: 'POST /api/upload/:userId/single',
-                multiple: 'POST /api/upload/:userId/multiple',
-                allowedTypes: 'GET /api/upload/allowed-types'
-            }
-        });
     }
 }
 

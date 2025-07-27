@@ -24,11 +24,8 @@ router.get('/health', (req, res) => {
 // 정책 관리 API
 router.use('/policy', policyRoutes);
 
-// 파일 업로드 API (새로 추가)
+// 파일 업로드 API
 router.use('/upload', uploadRoutes);
-
-// TODO: 추가 API 라우트들
-// router.use('/upload', uploadRoutes);
 // router.use('/auth', authRoutes);
 
 module.exports = router;
