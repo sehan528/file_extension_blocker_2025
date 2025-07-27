@@ -128,8 +128,25 @@ const CustomExtensionManager = {
                 throw new Error(response.error);
             }
         } catch (error) {
-            Utils.handleApiError(error, '확장자 추가에 실패했습니다.');
+            console.error('❌ 커스텀 확장자 추가 실패:', error);
+
+            // 서버 응답 파싱
+            let errorResponse;
+            try {
+                errorResponse = JSON.parse(error.message);
+            } catch (parseError) {
+                errorResponse = { error: error.message };
+            }
+
+            // 업로드 충돌 에러 특별 처리
+            if (errorResponse.errorType === 'UPLOAD_CONFLICT') {
+                this.handleUploadConflictError(errorResponse);
+            } else {
+                Utils.handleApiError(error, '확장자 추가에 실패했습니다.');
+            }
         }
+
+
     },
 
     // 커스텀 확장자 제거
@@ -159,6 +176,48 @@ const CustomExtensionManager = {
         } catch (error) {
             Utils.handleApiError(error, '확장자 제거에 실패했습니다.');
         }
+    },
+
+    // 업로드 충돌 에러 특별 처리
+    handleUploadConflictError(errorResponse) {
+        const { error, detail, suggestion, conflictInfo } = errorResponse;
+
+        // 상세한 충돌 정보를 포함한 알림 생성
+        const alertHtml = `
+        <div class="border-l-4 p-4 rounded-md bg-orange-100 text-orange-800 border-orange-200 mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium">${error}</h3>
+                    <div class="mt-2 text-sm">
+                        <p>${detail}</p>
+                        <p class="mt-1 font-medium">${suggestion}</p>
+                        ${conflictInfo.recentFiles ?
+            `<p class="mt-2 text-xs text-orange-600">최근 파일: ${conflictInfo.recentFiles}</p>`
+            : ''
+        }
+                    </div>
+                    <div class="mt-3">
+                        <button onclick="$(this).closest('.border-l-4').remove()" 
+                                class="text-xs bg-orange-200 hover:bg-orange-300 px-2 py-1 rounded">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('#alert-container').html(alertHtml);
+
+        // 10초 후 자동 사라짐
+        setTimeout(() => {
+            $('#alert-container .border-l-4').fadeOut();
+        }, 10000);
     }
 };
 
