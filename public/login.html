@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 파일 확장자 차단 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+<!-- 로그인 컨테이너 -->
+<div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+    <!-- 헤더 -->
+    <div class="text-center mb-8">
+        <div class="flex justify-center mb-4">
+            <svg class="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                      d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">파일 확장자 차단 시스템</h1>
+        <p class="text-gray-600">계정에 로그인하세요</p>
+    </div>
+
+    <!-- 알림 영역 -->
+    <div id="alert-container" class="mb-6"></div>
+
+    <!-- 로그인 폼 -->
+    <form id="login-form" class="space-y-6">
+        <!-- 사용자 ID -->
+        <div>
+            <label for="userid" class="block text-sm font-medium text-gray-700 mb-2">
+                사용자 ID
+            </label>
+            <input
+                    type="text"
+                    id="userid"
+                    name="userid"
+                    required
+                    maxlength="50"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="사용자 ID를 입력하세요">
+        </div>
+
+        <!-- 비밀번호 -->
+        <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                비밀번호
+            </label>
+            <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    minlength="6"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="비밀번호를 입력하세요">
+        </div>
+
+        <!-- 로그인 버튼 -->
+        <button
+                type="submit"
+                id="login-btn"
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            로그인
+        </button>
+    </form>
+
+    <!-- 구분선 -->
+    <div class="my-6 flex items-center">
+        <div class="flex-1 border-t border-gray-200"></div>
+        <span class="px-4 text-sm text-gray-500">또는</span>
+        <div class="flex-1 border-t border-gray-200"></div>
+    </div>
+
+    <!-- 회원가입 링크 -->
+    <div class="text-center">
+        <p class="text-sm text-gray-600">
+            계정이 없으신가요?
+            <button id="show-register" class="text-blue-600 hover:text-blue-700 font-medium">
+                회원가입
+            </button>
+        </p>
+    </div>
+
+
+</div>
+
+<!-- 회원가입 모달 -->
+<div id="register-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900">회원가입</h2>
+            <button id="close-register" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clip-rule="evenodd"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="register-form" class="space-y-4">
+            <div>
+                <label for="reg-userid" class="block text-sm font-medium text-gray-700 mb-1">
+                    사용자 ID *
+                </label>
+                <input
+                        type="text"
+                        id="reg-userid"
+                        name="userid"
+                        required
+                        maxlength="50"
+                        pattern="[a-zA-Z0-9_]+"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="영문, 숫자, 언더스코어만 사용">
+                <p class="text-xs text-gray-500 mt-1">3-50자, 영문/숫자/언더스코어만 허용</p>
+            </div>
+
+            <div>
+                <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-1">
+                    비밀번호 *
+                </label>
+                <input
+                        type="password"
+                        id="reg-password"
+                        name="password"
+                        required
+                        minlength="6"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="최소 6자 이상">
+            </div>
+
+            <div>
+                <label for="reg-name" class="block text-sm font-medium text-gray-700 mb-1">
+                    이름 *
+                </label>
+                <input
+                        type="text"
+                        id="reg-name"
+                        name="name"
+                        required
+                        maxlength="255"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="실명 또는 회사명">
+            </div>
+
+            <div>
+                <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-1">
+                    이메일
+                </label>
+                <input
+                        type="email"
+                        id="reg-email"
+                        name="email"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="example@company.com (선택사항)">
+            </div>
+
+            <button
+                    type="submit"
+                    id="register-btn"
+                    class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:opacity-50">
+                회원가입
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    // API 클라이언트
+    class AuthApiClient {
+        constructor() {
+            this.baseUrl = '/api/auth';
+        }
+
+        async request(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            const finalOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+
+            try {
+                const response = await fetch(url, finalOptions);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API 요청 실패:', error);
+                throw error;
+            }
+        }
+
+        async login(userid, password) {
+            return await this.request(`${this.baseUrl}/login`, {
+                method: 'POST',
+                body: JSON.stringify({userid, password})
+            });
+        }
+
+        async register(userData) {
+            return await this.request(`${this.baseUrl}/register`, {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+        }
+
+        async verifySession() {
+            return await this.request(`${this.baseUrl}/verify`);
+        }
+    }
+
+    const authApi = new AuthApiClient();
+
+    // 페이지 로드 시 인증 확인
+    $(document).ready(function () {
+        // 한 번만 실행되도록 플래그 확인
+        if (!window.loginPageInitialized) {
+            window.loginPageInitialized = true;
+            checkAuthAndRedirect();
+            initializeEventListeners();
+        }
+    });
+
+    // 로그인 상태 확인 및 리다이렉트
+    async function checkAuthAndRedirect() {
+        // 이미 확인 중이면 중복 실행 방지
+        if (window.authChecking) {
+            console.log('이미 인증 확인 중 - 중단');
+            return;
+        }
+        window.authChecking = true;
+
+        try {
+            const result = await authApi.verifySession();
+            if (result.success) {
+                console.log('✅ 이미 로그인된 상태 - 메인 페이지로 이동');
+                // 지연을 두고 리다이렉트
+                setTimeout(() => {
+                    window.location.replace('/');
+                }, 100);
+            } else {
+                console.log('미로그인 상태 - 로그인 페이지 유지');
+            }
+        } catch (error) {
+            // 로그인되지 않은 상태는 정상 (현재 페이지 유지)
+            console.log('미로그인 상태 - 로그인 페이지 표시');
+        } finally {
+            window.authChecking = false;
+        }
+    }
+
+    // 이벤트 리스너 초기화
+    function initializeEventListeners() {
+        // 로그인 폼
+        $('#login-form').on('submit', handleLogin);
+
+        // 회원가입 모달
+        $('#show-register').on('click', () => {
+            $('#register-modal').removeClass('hidden').addClass('flex');
+        });
+
+        $('#close-register').on('click', () => {
+            $('#register-modal').addClass('hidden').removeClass('flex');
+        });
+
+        // 모달 배경 클릭 시 닫기
+        $('#register-modal').on('click', function (e) {
+            if (e.target === this) {
+                $(this).addClass('hidden').removeClass('flex');
+            }
+        });
+
+        // 회원가입 폼
+        $('#register-form').on('submit', handleRegister);
+    }
+
+    // 로그인 처리
+    async function handleLogin(e) {
+        e.preventDefault();
+
+        const userid = $('#userid').val().trim();
+        const password = $('#password').val();
+
+        if (!userid || !password) {
+            showAlert('사용자 ID와 비밀번호를 입력해주세요.', 'warning');
+            return;
+        }
+
+        setLoadingState(true);
+
+        try {
+            const result = await authApi.login(userid, password);
+
+            if (result.success) {
+                showAlert('로그인 성공! 메인 페이지로 이동합니다.', 'success');
+
+                // 리다이렉트 중복 방지
+                if (!window.redirecting) {
+                    window.redirecting = true;
+
+                    // replace 사용으로 히스토리 남기지 않음
+                    setTimeout(() => {
+                        window.location.replace('/');
+                    }, 1000);
+                }
+            } else {
+                showAlert(result.error, 'error');
+            }
+
+        } catch (error) {
+            showAlert(error.message || '로그인 중 오류가 발생했습니다.', 'error');
+        } finally {
+            setLoadingState(false);
+        }
+    }
+
+    // 회원가입 처리
+    async function handleRegister(e) {
+        e.preventDefault();
+
+        const formData = {
+            userid: $('#reg-userid').val().trim(),
+            password: $('#reg-password').val(),
+            name: $('#reg-name').val().trim(),
+            email: $('#reg-email').val().trim()
+        };
+
+        if (!formData.userid || !formData.password || !formData.name) {
+            showAlert('필수 항목을 모두 입력해주세요.', 'warning', '#register-modal');
+            return;
+        }
+
+        setRegisterLoadingState(true);
+
+        try {
+            const result = await authApi.register(formData);
+
+            if (result.success) {
+                showAlert('회원가입이 완료되었습니다! 로그인해주세요.', 'success');
+
+                // 모달 닫기 및 폼 초기화
+                $('#register-modal').addClass('hidden').removeClass('flex');
+                $('#register-form')[0].reset();
+
+                // 로그인 폼에 사용자 ID 자동 입력
+                $('#userid').val(formData.userid);
+                $('#password').focus();
+            } else {
+                showAlert(result.error, 'error', '#register-modal');
+            }
+
+        } catch (error) {
+            showAlert(error.message || '회원가입 중 오류가 발생했습니다.', 'error', '#register-modal');
+        } finally {
+            setRegisterLoadingState(false);
+        }
+    }
+
+    // 알림 표시
+    function showAlert(message, type = 'info', container = '#alert-container') {
+        const colors = {
+            success: 'bg-green-100 text-green-800 border-green-200',
+            error: 'bg-red-100 text-red-800 border-red-200',
+            warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            info: 'bg-blue-100 text-blue-800 border-blue-200'
+        };
+
+        const alert = $(`
+                <div class="border-l-4 p-4 rounded-md ${colors[type]} mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm">${message}</span>
+                        <button onclick="$(this).parent().parent().remove()" class="text-lg font-bold opacity-70 hover:opacity-100">&times;</button>
+                    </div>
+                </div>
+            `);
+
+        $(container).html(alert);
+        setTimeout(() => alert.fadeOut(), 5000);
+    }
+
+    // 로그인 로딩 상태
+    function setLoadingState(isLoading) {
+        const btn = $('#login-btn');
+        if (isLoading) {
+            btn.prop('disabled', true).text('로그인 중...');
+        } else {
+            btn.prop('disabled', false).text('로그인');
+        }
+    }
+
+    // 회원가입 로딩 상태
+    function setRegisterLoadingState(isLoading) {
+        const btn = $('#register-btn');
+        if (isLoading) {
+            btn.prop('disabled', true).text('처리 중...');
+        } else {
+            btn.prop('disabled', false).text('회원가입');
+        }
+    }
+</script>
+</body>
+</html>
