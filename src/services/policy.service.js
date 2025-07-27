@@ -1,5 +1,6 @@
 const policyRepository = require('../repositories/policy.repository');
 const customerRepository = require('../repositories/customer.repository');
+const uploadRepository = require('../repositories/upload.repository');
 
 class PolicyService {
     // 사용자 ID를 고객 ID로 매핑 (임시)
@@ -134,7 +135,7 @@ class PolicyService {
             };
         }
 
-        const customerId = await this.getUserId(userId); // await 추가!
+        const customerId = await this.getUserId(userId);
 
         // 기존 확장자 중복 체크
         const exists = await policyRepository.checkExtensionExists(customerId, cleanExtension);
@@ -142,6 +143,32 @@ class PolicyService {
             return {
                 isValid: false,
                 error: `${cleanExtension} 확장자는 이미 추가되어 있습니다.`
+            };
+        }
+
+        // 업로드 이력 충돌 검사
+        const conflictCheck = await uploadRepository.checkExtensionConflict(customerId, cleanExtension);
+
+        if (conflictCheck.hasConflict) {
+            const fileCount = conflictCheck.fileCount;
+            const lastUploadDate = new Date(conflictCheck.lastUpload).toLocaleDateString('ko-KR');
+
+            // 최근 업로드된 파일명들
+            const recentFileNames = conflictCheck.recentFiles
+                .map(f => f.original_filename)
+                .slice(0, 3)
+                .join(', ');
+
+            return {
+                isValid: false,
+                error: `⚠️ ${cleanExtension} 확장자 차단 불가`,
+                detail: `이미 ${fileCount}개의 ${cleanExtension} 파일이 업로드되어 있습니다. (최근: ${lastUploadDate})`,
+                suggestion: `업로드된 파일들을 먼저 정리한 후 다시 시도해주세요.`,
+                conflictInfo: {
+                    fileCount: fileCount,
+                    recentFiles: recentFileNames,
+                    lastUpload: lastUploadDate
+                }
             };
         }
 
