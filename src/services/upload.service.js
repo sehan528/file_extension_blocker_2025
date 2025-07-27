@@ -12,12 +12,23 @@ class UploadService {
         this.ensureUploadDir();
     }
 
-    // 사용자 ID를 고객 ID로 매핑 (policy.service와 동일한 로직 -> util.. )
-    getUserId(userId) {
-        console.log('🔄 사용자 ID 변환:', userId);
-        const customerId = userId === 'demo1' ? 1 : userId === 'demo2' ? 2 : null;
-        console.log('🔄 변환된 고객 ID:', customerId);
-        return customerId;
+    // 사용자 ID를 고객 ID로 매핑
+    async getUserId(userId) {
+        try {
+            const customerRepository = require('../repositories/customer.repository');
+            const customer = await customerRepository.findByUserId(userId);
+
+            if (!customer) {
+                throw new Error(`사용자를 찾을 수 없습니다: ${userId}`);
+            }
+
+            console.log('🔄 업로드 서비스 사용자 매핑:', { userId, customerId: customer.id });
+            return customer.id;
+
+        } catch (error) {
+            console.error('❌ 업로드 서비스 사용자 ID 매핑 실패:', error);
+            throw error;
+        }
     }
 
     // 업로드 디렉토리 확인/생성
@@ -32,7 +43,7 @@ class UploadService {
 
     // 메인 파일 업로드 처리 (L1~L4 통합)
     async processFileUpload(userId, file) {
-        const customerId = this.getUserId(userId); // policyService 대신 자체 메서드 사용
+        const customerId = await this.getUserId(userId); // policyService 대신 자체 메서드 사용
 
         console.log('🚀 파일 업로드 처리 시작:', {
             userId,
@@ -124,11 +135,20 @@ class UploadService {
     // L4: 정책 기반 검증
     async validateAgainstPolicy(customerId, fileExtension) {
         try {
-            const userId = customerId === 1 ? 'demo1' : 'demo2'; // 역변환
+            // customerId로 직접 userid 역변환
+            const customerRepository = require('../repositories/customer.repository');
+            const customer = await customerRepository.findById(customerId);
+
+            if (!customer) {
+                throw new Error(`고객을 찾을 수 없습니다: ${customerId}`);
+            }
+
+            const userId = customer.userid;
 
             console.log('🔍 정책 검증 시작:', { customerId, userId, fileExtension });
 
             // 차단된 확장자 목록만 조회
+            const policyService = require('./policy.service');
             const blockedExtensions = await policyService.getBlockedExtensions(userId);
 
             console.log('🔍 블랙리스트 모드 정책 검증:', {
