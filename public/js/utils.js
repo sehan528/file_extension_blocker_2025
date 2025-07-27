@@ -1,25 +1,26 @@
 const Utils = {
     // 전역 변수 관리
     state: {
-        currentUser: 'demo1',
+        currentUser: null, // AuthManager 에서 설정됨
         customExtensions: [],
         fixedExtensions: {}
     },
 
     // 현재 사용자 표시 업데이트
     updateCurrentUserDisplay() {
-        $('#current-user').text(this.state.currentUser);
+        const displayUser = this.state.currentUser || '미로그인';
+        $('#current-user').text(displayUser);
     },
 
-    // 계정 전환
+    // 계정 전환 (AuthManager로 대체됨)
     switchUser() {
-        this.state.currentUser = this.state.currentUser === 'demo1' ? 'demo2' : 'demo1';
-        this.updateCurrentUserDisplay();
-        this.showAlert(`${this.state.currentUser} 계정으로 전환되었습니다.`, 'info');
+        console.warn('⚠️ Utils.switchUser()는 더 이상 사용되지 않습니다. AuthManager.switchAccount()를 사용하세요.');
 
-        // 정책 다시 로드
-        if (window.PolicyManager) {
-            window.PolicyManager.loadPoliciesFromAPI();
+        // AuthManager가 있으면 해당 메서드 호출
+        if (window.AuthManager) {
+            window.AuthManager.switchAccount();
+        } else {
+            this.showAlert('인증 관리자를 찾을 수 없습니다.', 'error');
         }
     },
 
@@ -117,6 +118,8 @@ const Utils = {
 
     // 샘플 데이터 로드 (fallback)
     loadSampleData() {
+        console.log('⚠️ 샘플 데이터 로드 (API 연결 실패 시 fallback)');
+
         this.state.fixedExtensions = { 'exe': true, 'bat': false };
         this.state.customExtensions = ['sh', 'ju', 'ch'];
 
@@ -129,12 +132,77 @@ const Utils = {
         }
     },
 
-    // API 에러 처리
+    // API 에러 처리 (인증 실패 시 AuthManager 호출)
     handleApiError(error, defaultMessage) {
         console.error('❌ API 오류:', error);
+
+        // 인증 관련 오류인지 확인
+        if (error.message && error.message.includes('인증이 필요합니다')) {
+            console.log('🔒 인증 실패 감지 - AuthManager로 전달');
+
+            if (window.AuthManager) {
+                window.AuthManager.handleAuthFailure();
+                return '인증이 만료되었습니다. 다시 로그인해주세요.';
+            }
+        }
+
         const message = error.message || defaultMessage;
         this.showAlert(message, 'error');
         return message;
+    },
+
+    // 현재 사용자 정보 가져오기 (AuthManager 연동)
+    getCurrentUser() {
+        if (window.AuthManager) {
+            const user = window.AuthManager.getCurrentUser();
+            return user ? user.userid : null;
+        }
+        return this.state.currentUser;
+    },
+
+    // 인증 상태 확인
+    isAuthenticated() {
+        if (window.AuthManager) {
+            return window.AuthManager.isLoggedIn();
+        }
+        return false;
+    },
+
+    // 인증 필요 기능 실행 전 체크
+    requireAuth() {
+        if (window.AuthManager) {
+            return window.AuthManager.requireAuth();
+        }
+
+        // AuthManager가 없는 경우 기본 동작
+        if (!this.state.currentUser) {
+            this.showAlert('로그인이 필요합니다.', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    // 인증 상태 업데이트 (AuthManager 에서 호출)
+    updateAuthState(user) {
+        if (user) {
+            this.state.currentUser = user.userid;
+            console.log('✅ Utils 인증 상태 업데이트:', user.userid);
+        } else {
+            this.state.currentUser = null;
+            console.log('🔒 Utils 인증 상태 초기화');
+        }
+
+        this.updateCurrentUserDisplay();
+    },
+
+    // 디버그 정보
+    getDebugInfo() {
+        return {
+            state: { ...this.state },
+            authStatus: this.isAuthenticated(),
+            currentUser: this.getCurrentUser(),
+            timestamp: new Date().toISOString()
+        };
     }
 };
 
