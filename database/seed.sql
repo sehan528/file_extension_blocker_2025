@@ -5,10 +5,14 @@ INSERT INTO extension (extension_name) VALUES
                                            ('pdf'), ('docx'), ('xlsx'), ('png'), ('jpg'), ('gif'), ('zip'), ('rar'),
                                            ('ju'), ('ch'), ('tmp');
 
--- 테스트 고객 계정 (password is 'flow1234')
+-- 테스트 고객 계정 (비밀번호는 애플리케이션 시작 시 설정)
 INSERT INTO customer (userid, password, name, email) VALUES
-                                                         ('demo1', '$2b$10$rOvGyKdQWVh.YP7V3jXzDuG/8G2tANmfHlQAk5R2kI8y4ZG7Q5oJq', 'Conservative Corp', 'admin@conservative.com'),
-                                                         ('demo2', '$2b$10$rOvGyKdQWVh.YP7V3jXzDuG/8G2tANmfHlQAk5R2kI8y4ZG7Q5oJq', 'Secure Enterprise', 'security@secure-ent.com');
+                                                         ('demo1', 'PLACEHOLDER_PASSWORD_1', 'Conservative Corp', 'admin@conservative.com'),
+                                                         ('demo2', 'PLACEHOLDER_PASSWORD_2', 'Secure Enterprise', 'security@secure-ent.com')
+ON CONFLICT (userid) DO UPDATE SET
+                                   password = EXCLUDED.password,
+                                   name = EXCLUDED.name,
+                                   email = EXCLUDED.email;
 
 -- demo1: 고정 확장자 2개만 사용 (exe, bat)
 INSERT INTO fixed_extension_policy (customer_id, extension_id)
@@ -30,10 +34,10 @@ INSERT INTO uploaded_file (customer_id, original_filename, extension_id, file_si
                                                                                                      (2, 'image.png', (SELECT id FROM extension WHERE extension_name = 'png'), 1024000, NOW() - INTERVAL '1 hour');
 
 -- 활성 세션 샘플 데이터 (테스트용)
-INSERT INTO user_sessions (session_id, customer_id, session_data, expires_at, ip_address, user_agent) VALUES
-                                                                                                          ('demo_session_001', 1, '{"userid":"demo1","name":"Conservative Corp","loginTime":"2025-01-26T10:00:00Z"}', CURRENT_TIMESTAMP + INTERVAL '24 hours', '127.0.0.1', 'Mozilla/5.0 (Test Browser)'),
-                                                                                                          ('demo_session_002', 2, '{"userid":"demo2","name":"Secure Enterprise","loginTime":"2025-01-26T11:00:00Z"}', CURRENT_TIMESTAMP + INTERVAL '24 hours', '127.0.0.1', 'Mozilla/5.0 (Test Browser)');
+-- INSERT INTO user_sessions (session_id, customer_id, session_data, expires_at, ip_address, user_agent) VALUES
+--                                                                                                           ('demo_session_001', 1, '{"userid":"demo1","name":"Conservative Corp","loginTime":"2025-01-26T10:00:00Z"}', CURRENT_TIMESTAMP + INTERVAL '24 hours', '127.0.0.1', 'Mozilla/5.0 (Test Browser)'),
+--                                                                                                           ('demo_session_002', 2, '{"userid":"demo2","name":"Secure Enterprise","loginTime":"2025-01-26T11:00:00Z"}', CURRENT_TIMESTAMP + INTERVAL '24 hours', '127.0.0.1', 'Mozilla/5.0 (Test Browser)');
 
 -- 만료된 세션 샘플 (정리 테스트용)
-INSERT INTO user_sessions (session_id, customer_id, session_data, expires_at, ip_address) VALUES
-    ('expired_session_001', 1, '{"userid":"demo1","expired":true}', CURRENT_TIMESTAMP - INTERVAL '1 hour', '127.0.0.1');
+-- INSERT INTO user_sessions (session_id, customer_id, session_data, expires_at, ip_address) VALUES
+--     ('expired_session_001', 1, '{"userid":"demo1","expired":true}', CURRENT_TIMESTAMP - INTERVAL '1 hour', '127.0.0.1');
